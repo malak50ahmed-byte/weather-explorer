@@ -48,6 +48,24 @@ if st.button("Get Weather"):
     # --- Fetch the past week's temperatures ---
     today = datetime.now()  # noqa: DTZ005
     week_ago = today - timedelta(7)
+    years_ago = []
+    try:
+        for year in range(today.year - 10, today.year):
+            old_start = week_ago.replace(year=year).strftime("%Y-%m-%d")
+            old_end = today.replace(year=year).strftime("%Y-%m-%d")
+
+            archive_url = f"https://archive-api.open-meteo.com/v1/archive?latitude={latitude}&longitude={longitude}&start_date={old_start}&end_date={old_end}&daily=temperature_2m_max,temperature_2m_min"
+
+            archive_url_response = requests.get(archive_url)
+            data = archive_url_response.json()
+
+            temps = data["daily"]["temperature_2m_max"]
+            c = sum(temps) / len(temps)
+            years_ago.append(c)
+
+    except requests.exceptions.RequestException as e:
+        st.error(f"Could not fetch archive data: {e}")
+        st.stop()
 
     start = week_ago.strftime("%Y-%m-%d")  # API expects YYYY-MM-DD
     end = today.strftime("%Y-%m-%d")
@@ -76,7 +94,19 @@ if st.button("Get Weather"):
     df["Date"] = pd.to_datetime(df["Date"])
     st.dataframe(df)
 
+    curent_average = df["Max Temp"].mean()
+
+    historical_average = sum(years_ago) / len(years_ago)
+    difference = curent_average - historical_average
+
+    st.metric(
+        label="vs. 10-year average",
+        value=f"{curent_average:.1f}°C",
+        delta=f"{difference:.1f}°C",
+    )
+
     # --- Plot ---
+    plt.style.use("dark_background")
     fig, ax = plt.subplots(figsize=(10, 6))
 
     ax.plot(df["Date"], df["Max Temp"], marker="o", label="Max Temp")
