@@ -92,6 +92,12 @@ if st.button("Get Weather"):
     )
 
     df["Date"] = pd.to_datetime(df["Date"])
+
+    c1, c2, c3 = st.columns(3)
+    c1.metric(label="Average Max", value=f"{df['Max Temp'].mean():.1f}°C")
+    c2.metric(label="Highest", value=f"{df['Max Temp'].max():.1f}°C")
+    c3.metric(label="Lowest", value=f"{df['Min Temp'].min():.1f}°C")
+
     st.dataframe(df)
 
     curent_average = df["Max Temp"].mean()
